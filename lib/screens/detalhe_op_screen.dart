@@ -1,0 +1,359 @@
+import 'package:flutter/material.dart';
+import '../enums/perfil_usuario.dart';
+import '../enums/status_op.dart';
+import '../models/op.dart';
+import '../models/usuario.dart';
+import '../services/op_service.dart';
+import 'ajustar_perda_palete_screen.dart';
+import 'editar_palete_screen.dart';
+import 'historico_op_screen.dart';
+
+class DetalheOPScreen extends StatefulWidget {
+  final OP op;
+  final Usuario usuario;
+
+  const DetalheOPScreen({
+    super.key,
+    required this.op,
+    required this.usuario,
+  });
+
+  @override
+  State<DetalheOPScreen> createState() => _DetalheOPScreenState();
+}
+
+class _DetalheOPScreenState extends State<DetalheOPScreen> {
+  final TextEditingController numeroController = TextEditingController();
+  final TextEditingController quantidadeOriginalController =
+      TextEditingController();
+  final TextEditingController motivoReaberturaController =
+      TextEditingController();
+
+  final OPService opService = OPService();
+
+  bool isQuebra = false;
+
+  String textoStatus(StatusOP status) {
+    switch (status) {
+      case StatusOP.emAndamento:
+        return 'Em andamento';
+      case StatusOP.finalizada:
+        return 'Finalizada';
+      case StatusOP.reaberta:
+        return 'Reaberta';
+      case StatusOP.emRevisao:
+        return 'Em revisão';
+    }
+  }
+
+  String formatarData(DateTime? data) {
+    if (data == null) return '-';
+    return '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year} '
+        '${data.hour.toString().padLeft(2, '0')}:'
+        '${data.minute.toString().padLeft(2, '0')}';
+  }
+
+  bool get podeEditar =>
+      widget.usuario.perfil == PerfilUsuario.apontamento &&
+      widget.op.status != StatusOP.finalizada;
+
+  bool get podeReabrir =>
+      widget.usuario.perfil == PerfilUsuario.apontamento &&
+      widget.op.status == StatusOP.finalizada;
+
+void salvarPalete() async {
+  final numero = numeroController.text.trim();
+  final quantidadeOriginal = quantidadeOriginalController.text.trim();
+
+  if (numero.isEmpty || quantidadeOriginal.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Preencha número e quantidade original do palete'),
+      ),
+    );
+    return;
+  }
+
+  try {
+    await opService.adicionarPalete(
+      op: widget.op,
+      numero: numero,
+      quantidadeOriginal: quantidadeOriginal,
+      quebra: isQuebra,
+      usuario: widget.usuario,
+    );
+
+    setState(() {
+      numeroController.clear();
+      quantidadeOriginalController.clear();
+      isQuebra = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Palete registrado com sucesso')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+  void finalizarOP() async {
+  try {
+    await opService.finalizarOP(
+      op: widget.op,
+      usuario: widget.usuario,
+    );
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('OP finalizada com sucesso')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+  void reabrirOP() async {
+  final motivo = motivoReaberturaController.text.trim();
+
+  try {
+    await opService.reabrirOP(
+      op: widget.op,
+      motivo: motivo,
+      usuario: widget.usuario,
+    );
+
+    setState(() {
+      motivoReaberturaController.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('OP reaberta com sucesso')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+  Future<void> abrirEdicaoPalete(palete) async {
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditarPaleteScreen(
+          op: widget.op,
+          palete: palete,
+          usuario: widget.usuario,
+        ),
+      ),
+    );
+
+    if (resultado == true) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Palete editado com sucesso')),
+      );
+    }
+  }
+
+  Future<void> abrirAjustePerda(palete) async {
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AjustarPerdaPaleteScreen(
+          op: widget.op,
+          palete: palete,
+          usuario: widget.usuario,
+        ),
+      ),
+    );
+
+    if (resultado == true) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perda ajustada com sucesso')),
+      );
+    }
+  }
+
+  void abrirHistorico() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HistoricoOPScreen(op: widget.op),
+      ),
+    );
+  }
+
+  Widget campo(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+    bool enabled = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        enabled: enabled,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    numeroController.dispose();
+    quantidadeOriginalController.dispose();
+    motivoReaberturaController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final op = widget.op;
+    final totalChapas = opService.calcularTotalChapas(op);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('OP ${op.ordem}'),
+        actions: [
+          IconButton(
+            onPressed: abrirHistorico,
+            icon: const Icon(Icons.history),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Cliente: ${op.cliente}'),
+            Text('Medida: ${op.medida}'),
+            Text('Ordem: ${op.ordem}'),
+            Text('FT: ${op.ft}'),
+            Text('QP: ${op.qp}'),
+            Text('Status: ${textoStatus(op.status)}'),
+            Text('Paletes registrados: ${op.paletes.length}'),
+            Text(
+              'Total de chapas: $totalChapas',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            if (op.ultimoMotivoReabertura.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Último motivo de reabertura: ${op.ultimoMotivoReabertura}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                'Data da última reabertura: ${formatarData(op.dataUltimaReabertura)}',
+              ),
+            ],
+            const SizedBox(height: 20),
+            if (podeEditar) ...[
+              const Text(
+                'Registrar Palete',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              campo('Número do Palete', numeroController),
+              campo(
+                'Quantidade Original',
+                quantidadeOriginalController,
+                keyboardType: TextInputType.number,
+              ),
+              SwitchListTile(
+                title: const Text('Palete de Quebra'),
+                value: isQuebra,
+                onChanged: (value) {
+                  setState(() {
+                    isQuebra = value;
+                  });
+                },
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: salvarPalete,
+                  child: const Text('Salvar Palete'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: finalizarOP,
+                  child: const Text('Finalizar OP'),
+                ),
+              ),
+            ],
+            if (podeReabrir) ...[
+              const SizedBox(height: 16),
+              campo('Motivo da Reabertura', motivoReaberturaController),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: reabrirOP,
+                  child: const Text('Reabrir OP'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            const Text(
+              'Paletes Registrados',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            if (op.paletes.isEmpty)
+              const Text('Nenhum palete registrado ainda.')
+            else
+              ...op.paletes.map(
+                (p) => Card(
+                  child: ListTile(
+                    title: Text('Palete ${p.numero}'),
+                    subtitle: Text(
+                      'Tipo: ${p.quebra ? "Quebra" : "Completo"}\n'
+                      'Quantidade original: ${p.quantidadeOriginal}\n'
+                      'Quantidade perdida: ${p.quantidadePerdida}\n'
+                      'Saldo atual: ${p.saldoAtual}\n'
+                      'Último motivo de ajuste: '
+                      '${p.ultimoMotivoAjuste.isEmpty ? "-" : p.ultimoMotivoAjuste}\n'
+                      'Data do último ajuste: ${formatarData(p.dataUltimoAjuste)}',
+                    ),
+                    trailing: podeEditar
+                        ? Wrap(
+                            spacing: 4,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => abrirEdicaoPalete(p),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.warning_amber_rounded),
+                                onPressed: () => abrirAjustePerda(p),
+                              ),
+                            ],
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

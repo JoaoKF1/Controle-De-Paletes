@@ -1,0 +1,4 @@
+enum PerfilUsuario {
+  apontamento,
+  consulta,
+}
