@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../enums/perfil_usuario.dart';
 import '../enums/status_op.dart';
 import '../enums/status_palete.dart';
+import '../enums/tipo_onda.dart';
 import '../models/op.dart';
 import '../models/palete.dart';
 import '../models/usuario.dart';
@@ -54,12 +55,40 @@ class OPService {
     await prefs.setString(_storageKey, jsonString);
   }
 
+  String textoOnda(TipoOnda onda) {
+    switch (onda) {
+      case TipoOnda.b:
+        return 'B';
+      case TipoOnda.c:
+        return 'C';
+      case TipoOnda.dc:
+        return 'DC';
+      case TipoOnda.db:
+        return 'DB';
+    }
+  }
+
+  int quantidadePadraoPorOnda(TipoOnda onda) {
+    switch (onda) {
+      case TipoOnda.b:
+        return 385;
+      case TipoOnda.c:
+        return 286;
+      case TipoOnda.dc:
+        return 192;
+      case TipoOnda.db:
+        return 207;
+    }
+  }
+
   Future<void> criarOP({
     required String cliente,
-    required String medida,
+    required String largura,
+    required String comprimento,
     required String ordem,
     required String ft,
     required String qp,
+    required TipoOnda onda,
     required Usuario usuario,
   }) async {
     if (usuario.perfil != PerfilUsuario.apontamento) {
@@ -68,10 +97,12 @@ class OPService {
 
     final op = OP(
       cliente: cliente,
-      medida: medida,
+      largura: largura,
+      comprimento: comprimento,
       ordem: ordem,
       ft: ft,
       qp: qp,
+      onda: onda,
       status: StatusOP.emAndamento,
       criadaPor: usuario,
       dataCriacao: DateTime.now(),
@@ -125,8 +156,8 @@ class OPService {
   Future<void> adicionarPalete({
     required OP op,
     required String numero,
-    required String quantidadeOriginal,
     required bool quebra,
+    required String? quantidadeQuebra,
     required Usuario usuario,
   }) async {
     if (usuario.perfil != PerfilUsuario.apontamento) {
@@ -143,15 +174,21 @@ class OPService {
       throw Exception('Já existe um palete com esse número nesta OP.');
     }
 
-    final qtdOriginalInt = int.tryParse(quantidadeOriginal.trim()) ?? 0;
+    int quantidadeOriginal;
 
-    if (qtdOriginalInt <= 0) {
-      throw Exception('Quantidade original inválida.');
+    if (quebra) {
+      final qtdQuebra = int.tryParse((quantidadeQuebra ?? '').trim()) ?? 0;
+      if (qtdQuebra <= 0) {
+        throw Exception('Quantidade da quebra inválida.');
+      }
+      quantidadeOriginal = qtdQuebra;
+    } else {
+      quantidadeOriginal = quantidadePadraoPorOnda(op.onda);
     }
 
     final palete = Palete(
       numero: numeroNormalizado,
-      quantidadeOriginal: qtdOriginalInt.toString(),
+      quantidadeOriginal: quantidadeOriginal.toString(),
       quantidadePerdida: '0',
       quebra: quebra,
       status: quebra ? StatusPalete.quebra : StatusPalete.completo,

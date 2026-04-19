@@ -7,6 +7,7 @@ import '../services/op_service.dart';
 import 'ajustar_perda_palete_screen.dart';
 import 'editar_palete_screen.dart';
 import 'historico_op_screen.dart';
+import 'scanner_palete_screen.dart';
 
 class DetalheOPScreen extends StatefulWidget {
   final OP op;
@@ -24,7 +25,7 @@ class DetalheOPScreen extends StatefulWidget {
 
 class _DetalheOPScreenState extends State<DetalheOPScreen> {
   final TextEditingController numeroController = TextEditingController();
-  final TextEditingController quantidadeOriginalController =
+  final TextEditingController quantidadeQuebraController =
       TextEditingController();
   final TextEditingController motivoReaberturaController =
       TextEditingController();
@@ -63,86 +64,91 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
       widget.usuario.perfil == PerfilUsuario.apontamento &&
       widget.op.status == StatusOP.finalizada;
 
-void salvarPalete() async {
-  final numero = numeroController.text.trim();
-  final quantidadeOriginal = quantidadeOriginalController.text.trim();
+  void salvarPalete() async {
+    final numero = numeroController.text.trim();
+    final quantidadeQuebra = quantidadeQuebraController.text.trim();
 
-  if (numero.isEmpty || quantidadeOriginal.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Preencha número e quantidade original do palete'),
-      ),
-    );
-    return;
+    if (numero.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha o número do palete')),
+      );
+      return;
+    }
+
+    if (isQuebra && quantidadeQuebra.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe a quantidade da quebra')),
+      );
+      return;
+    }
+
+    try {
+      await opService.adicionarPalete(
+        op: widget.op,
+        numero: numero,
+        quebra: isQuebra,
+        quantidadeQuebra: isQuebra ? quantidadeQuebra : null,
+        usuario: widget.usuario,
+      );
+
+      setState(() {
+        numeroController.clear();
+        quantidadeQuebraController.clear();
+        isQuebra = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Palete registrado com sucesso')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
-
-  try {
-    await opService.adicionarPalete(
-      op: widget.op,
-      numero: numero,
-      quantidadeOriginal: quantidadeOriginal,
-      quebra: isQuebra,
-      usuario: widget.usuario,
-    );
-
-    setState(() {
-      numeroController.clear();
-      quantidadeOriginalController.clear();
-      isQuebra = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Palete registrado com sucesso')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
-    );
-  }
-}
 
   void finalizarOP() async {
-  try {
-    await opService.finalizarOP(
-      op: widget.op,
-      usuario: widget.usuario,
-    );
+    try {
+      await opService.finalizarOP(
+        op: widget.op,
+        usuario: widget.usuario,
+      );
 
-    setState(() {});
+      setState(() {});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OP finalizada com sucesso')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OP finalizada com sucesso')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
-}
 
   void reabrirOP() async {
-  final motivo = motivoReaberturaController.text.trim();
+    final motivo = motivoReaberturaController.text.trim();
 
-  try {
-    await opService.reabrirOP(
-      op: widget.op,
-      motivo: motivo,
-      usuario: widget.usuario,
-    );
+    try {
+      await opService.reabrirOP(
+        op: widget.op,
+        motivo: motivo,
+        usuario: widget.usuario,
+      );
 
-    setState(() {
-      motivoReaberturaController.clear();
-    });
+      setState(() {
+        motivoReaberturaController.clear();
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OP reaberta com sucesso')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OP reaberta com sucesso')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
-}
 
   Future<void> abrirEdicaoPalete(palete) async {
     final resultado = await Navigator.push(
@@ -163,6 +169,25 @@ void salvarPalete() async {
       );
     }
   }
+
+  Future<void> abrirScannerPalete() async {
+  final resultado = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const ScannerPaleteScreen(),
+    ),
+  );
+
+  if (resultado != null && resultado is String) {
+    setState(() {
+      numeroController.text = resultado;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Palete $resultado identificado pelo código')),
+    );
+  }
+}
 
   Future<void> abrirAjustePerda(palete) async {
     final resultado = await Navigator.push(
@@ -216,7 +241,7 @@ void salvarPalete() async {
   @override
   void dispose() {
     numeroController.dispose();
-    quantidadeOriginalController.dispose();
+    quantidadeQuebraController.dispose();
     motivoReaberturaController.dispose();
     super.dispose();
   }
@@ -225,6 +250,7 @@ void salvarPalete() async {
   Widget build(BuildContext context) {
     final op = widget.op;
     final totalChapas = opService.calcularTotalChapas(op);
+    final quantidadePadrao = opService.quantidadePadraoPorOnda(op.onda);
 
     return Scaffold(
       appBar: AppBar(
@@ -242,7 +268,9 @@ void salvarPalete() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Cliente: ${op.cliente}'),
-            Text('Medida: ${op.medida}'),
+            Text('Medida: ${op.largura} x ${op.comprimento}'),
+            Text('Onda: ${opService.textoOnda(op.onda)}'),
+            Text('Qtd. padrão por palete completo: $quantidadePadrao'),
             Text('Ordem: ${op.ordem}'),
             Text('FT: ${op.ft}'),
             Text('QP: ${op.qp}'),
@@ -270,20 +298,41 @@ void salvarPalete() async {
               ),
               const SizedBox(height: 12),
               campo('Número do Palete', numeroController),
-              campo(
-                'Quantidade Original',
-                quantidadeOriginalController,
-                keyboardType: TextInputType.number,
+              SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: abrirScannerPalete,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Ler código de barras'),
+                ),
               ),
+              const SizedBox(height: 12),
               SwitchListTile(
                 title: const Text('Palete de Quebra'),
                 value: isQuebra,
                 onChanged: (value) {
                   setState(() {
                     isQuebra = value;
+                    if (!isQuebra) {
+                      quantidadeQuebraController.clear();
+                    }
                   });
                 },
               ),
+              if (!isQuebra)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Palete completo usará automaticamente $quantidadePadrao chapas.',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              if (isQuebra)
+                campo(
+                  'Quantidade da Quebra',
+                  quantidadeQuebraController,
+                  keyboardType: TextInputType.number,
+                ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

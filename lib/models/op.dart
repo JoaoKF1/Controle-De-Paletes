@@ -1,14 +1,17 @@
 import '../enums/status_op.dart';
+import '../enums/tipo_onda.dart';
 import 'historico_alteracao.dart';
 import 'palete.dart';
 import 'usuario.dart';
 
 class OP {
   final String cliente;
-  final String medida;
+  final String largura;
+  final String comprimento;
   final String ordem;
   final String ft;
   final String qp;
+  final TipoOnda onda;
   StatusOP status;
   final Usuario criadaPor;
   final DateTime dataCriacao;
@@ -19,10 +22,12 @@ class OP {
 
   OP({
     required this.cliente,
-    required this.medida,
+    required this.largura,
+    required this.comprimento,
     required this.ordem,
     required this.ft,
     required this.qp,
+    required this.onda,
     required this.status,
     required this.criadaPor,
     required this.dataCriacao,
@@ -35,10 +40,12 @@ class OP {
   Map<String, dynamic> toMap() {
     return {
       'cliente': cliente,
-      'medida': medida,
+      'largura': largura,
+      'comprimento': comprimento,
       'ordem': ordem,
       'ft': ft,
       'qp': qp,
+      'onda': onda.name,
       'status': status.name,
       'criadaPor': criadaPor.toMap(),
       'dataCriacao': dataCriacao.toIso8601String(),
@@ -52,10 +59,15 @@ class OP {
   factory OP.fromMap(Map<String, dynamic> map) {
     return OP(
       cliente: map['cliente'] ?? '',
-      medida: map['medida'] ?? '',
+      largura: map['largura'] ?? '',
+      comprimento: map['comprimento'] ?? '',
       ordem: map['ordem'] ?? '',
       ft: map['ft'] ?? '',
       qp: map['qp'] ?? '',
+      onda: TipoOnda.values.firstWhere(
+        (e) => e.name == map['onda'],
+        orElse: () => TipoOnda.c,
+      ),
       status: StatusOP.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => StatusOP.emAndamento,
