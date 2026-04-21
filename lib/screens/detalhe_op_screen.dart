@@ -64,7 +64,7 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
       widget.usuario.perfil == PerfilUsuario.apontamento &&
       widget.op.status == StatusOP.finalizada;
 
-  void salvarPalete() async {
+  void salvarPaleteManual() async {
     final numero = numeroController.text.trim();
     final quantidadeQuebra = quantidadeQuebraController.text.trim();
 
@@ -105,6 +105,122 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
         SnackBar(content: Text(e.toString())),
       );
     }
+  }
+
+  Future<void> abrirScannerPalete() async {
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ScannerPaleteScreen(),
+      ),
+    );
+
+    if (resultado != null && resultado is String) {
+      await mostrarPopupRegistroPalete(resultado);
+    }
+  }
+
+  Future<void> mostrarPopupRegistroPalete(String numeroPalete) async {
+    bool quebra = false;
+    final TextEditingController quantidadeQuebraPopupController =
+        TextEditingController();
+
+    final quantidadePadrao = opService.quantidadePadraoPorOnda(widget.op.onda);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStatePopup) {
+            return AlertDialog(
+              title: const Text('Registrar Palete'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Palete identificado: $numeroPalete'),
+                    const SizedBox(height: 8),
+                    Text('Onda da OP: ${opService.textoOnda(widget.op.onda)}'),
+                    const SizedBox(height: 8),
+                    Text('Quantidade padrão: $quantidadePadrao'),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Palete de Quebra'),
+                      value: quebra,
+                      onChanged: (value) {
+                        setStatePopup(() {
+                          quebra = value;
+                        });
+                      },
+                    ),
+                    if (quebra)
+                      TextField(
+                        controller: quantidadeQuebraPopupController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Quantidade da Quebra',
+                          border: OutlineInputBorder(),
+                        ),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Se salvar como completo, a quantidade padrão será usada automaticamente.',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await opService.adicionarPalete(
+                        op: widget.op,
+                        numero: numeroPalete,
+                        quebra: quebra,
+                        quantidadeQuebra: quebra
+                            ? quantidadeQuebraPopupController.text.trim()
+                            : null,
+                        usuario: widget.usuario,
+                      );
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+
+                      this.setState(() {});
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Palete registrado com sucesso'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    }
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void finalizarOP() async {
@@ -169,25 +285,6 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
       );
     }
   }
-
-  Future<void> abrirScannerPalete() async {
-  final resultado = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const ScannerPaleteScreen(),
-    ),
-  );
-
-  if (resultado != null && resultado is String) {
-    setState(() {
-      numeroController.text = resultado;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Palete $resultado identificado pelo código')),
-    );
-  }
-}
 
   Future<void> abrirAjustePerda(palete) async {
     final resultado = await Navigator.push(
@@ -293,17 +390,17 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
             const SizedBox(height: 20),
             if (podeEditar) ...[
               const Text(
-                'Registrar Palete',
+                'Registrar Palete Manualmente',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               campo('Número do Palete', numeroController),
               SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: abrirScannerPalete,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Ler código de barras'),
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: abrirScannerPalete,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Ler código de barras'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -336,8 +433,8 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: salvarPalete,
-                  child: const Text('Salvar Palete'),
+                  onPressed: salvarPaleteManual,
+                  child: const Text('Salvar Palete Manualmente'),
                 ),
               ),
               const SizedBox(height: 12),
