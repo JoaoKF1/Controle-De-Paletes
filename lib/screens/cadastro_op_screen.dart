@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../enums/tipo_onda.dart';
 import '../models/usuario.dart';
 import '../services/op_service.dart';
+import '../enums/tipo_op.dart';
 
 class CadastroOPScreen extends StatefulWidget {
   final Usuario usuario;
@@ -26,6 +27,7 @@ class _CadastroOPScreenState extends State<CadastroOPScreen> {
   final OPService opService = OPService();
 
   TipoOnda? ondaSelecionada = TipoOnda.c;
+  TipoOP tipoSelecionado = TipoOP.onduladeira;
 
   void salvar() async {
     final cliente = clienteController.text.trim();
@@ -57,6 +59,7 @@ class _CadastroOPScreenState extends State<CadastroOPScreen> {
         ft: ft,
         qp: qp,
         onda: ondaSelecionada!,
+        tipo: tipoSelecionado,
         usuario: widget.usuario,
       );
 
@@ -128,6 +131,33 @@ class _CadastroOPScreenState extends State<CadastroOPScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<TipoOP>(
+                value: tipoSelecionado,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de OP',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: TipoOP.onduladeira,
+                    child: Text('Onduladeira'),
+                  ),
+                  DropdownMenuItem(
+                    value: TipoOP.conversao,
+                    child: Text('Conversão'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      tipoSelecionado = value;
+                    });
+                  }
+                },
+              ),
+            ),
             campoUnico('Cliente', clienteController),
             Padding(
               padding: const EdgeInsets.only(bottom: 12),

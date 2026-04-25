@@ -3,6 +3,7 @@ import '../enums/tipo_onda.dart';
 import 'historico_alteracao.dart';
 import 'palete.dart';
 import 'usuario.dart';
+import '../enums/tipo_op.dart';
 
 class OP {
   final String cliente;
@@ -12,6 +13,7 @@ class OP {
   final String ft;
   final String qp;
   final TipoOnda onda;
+  final TipoOP tipo;
   StatusOP status;
   final Usuario criadaPor;
   final DateTime dataCriacao;
@@ -28,6 +30,7 @@ class OP {
     required this.ft,
     required this.qp,
     required this.onda,
+    required this.tipo,
     required this.status,
     required this.criadaPor,
     required this.dataCriacao,
@@ -46,6 +49,7 @@ class OP {
       'ft': ft,
       'qp': qp,
       'onda': onda.name,
+      'tipo': tipo.name,
       'status': status.name,
       'criadaPor': criadaPor.toMap(),
       'dataCriacao': dataCriacao.toIso8601String(),
@@ -67,6 +71,10 @@ class OP {
       onda: TipoOnda.values.firstWhere(
         (e) => e.name == map['onda'],
         orElse: () => TipoOnda.c,
+      ),
+      tipo: TipoOP.values.firstWhere(
+      (e) => e.name == map['tipo'],
+      orElse: () => TipoOP.onduladeira,
       ),
       status: StatusOP.values.firstWhere(
         (e) => e.name == map['status'],

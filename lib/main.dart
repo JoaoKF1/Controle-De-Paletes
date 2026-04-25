@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     final usuarioLogado = Usuario(
       nome: 'João',
       login: 'joao',
-      perfil: PerfilUsuario.apontamento,
+      perfil: PerfilUsuario.apontamentoOnduladeira,
     );
 
     return MaterialApp(

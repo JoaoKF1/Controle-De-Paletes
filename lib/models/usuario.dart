@@ -25,7 +25,7 @@ class Usuario {
       login: map['login'] ?? '',
       perfil: PerfilUsuario.values.firstWhere(
         (e) => e.name == map['perfil'],
-        orElse: () => PerfilUsuario.consulta,
+        orElse: () => PerfilUsuario.operador,
       ),
     );
   }

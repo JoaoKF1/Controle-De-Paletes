@@ -6,6 +6,7 @@ import '../models/usuario.dart';
 import '../services/op_service.dart';
 import 'cadastro_op_screen.dart';
 import 'detalhe_op_screen.dart';
+import '../enums/tipo_op.dart';
 
 enum TipoFiltroBusca {
   todos,
@@ -35,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   final TextEditingController buscaController = TextEditingController();
 
   bool carregando = true;
+  TipoOP? tipoFiltroOPSelecionado;
   late TabController _tabController;
   String filtroBusca = '';
   TipoFiltroBusca tipoFiltroSelecionado = TipoFiltroBusca.todos;
@@ -58,6 +60,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     _tabController.dispose();
     buscaController.dispose();
     super.dispose();
+  }
+
+  String textoTipoOP(TipoOP tipo) {
+    switch (tipo) {
+      case TipoOP.onduladeira:
+        return 'Onduladeira';
+      case TipoOP.conversao:
+        return 'Conversão';
+    }
   }
 
   String textoStatus(StatusOP status) {
@@ -154,10 +165,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   List<OP> filtrarOPsPorStatus(StatusOP status) {
-    return opService
-        .listarOPs()
-        .where((op) => op.status == status && correspondeBusca(op))
-        .toList();
+  return opService
+      .listarOPs()
+      .where(
+        (op) =>
+            op.status == status &&
+            correspondeBusca(op) &&
+            (tipoFiltroOPSelecionado == null ||
+                op.tipo == tipoFiltroOPSelecionado),
+      )
+      .toList();
   }
 
   Widget construirListaOPs(List<OP> ops) {
@@ -179,9 +196,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             onTap: () => abrirDetalheOP(op),
             title: Text('Ordem: ${op.ordem}'),
             subtitle: Text(
+              'Tipo: ${textoTipoOP(op.tipo)}\n'
               'Cliente: ${op.cliente}\n'
               'Medida: ${op.largura} x ${op.comprimento}\n'
-              'Onda: ${opService.textoOnda(op.onda)}\n'
               'FT: ${op.ft}\n'
               'QP: ${op.qp}\n'
               'Status: ${textoStatus(op.status)}\n'
@@ -217,6 +234,33 @@ class _DashboardScreenState extends State<DashboardScreen>
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+                  child: DropdownButtonFormField<TipoOP?>(
+                    value: tipoFiltroOPSelecionado,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de OP',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<TipoOP?>(
+                        value: null,
+                        child: Text('Todos'),
+                      ),
+                      ...TipoOP.values.map(
+                        (tipo) => DropdownMenuItem<TipoOP?>(
+                          value: tipo,
+                          child: Text(textoTipoOP(tipo)),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        tipoFiltroOPSelecionado = value;
+                      });
+                    },
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
                   child: DropdownButtonFormField<TipoFiltroBusca>(
@@ -280,7 +324,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
       floatingActionButton:
-          widget.usuario.perfil == PerfilUsuario.apontamento
+          widget.usuario.perfil == PerfilUsuario.apontamentoOnduladeira || 
+          widget.usuario.perfil == PerfilUsuario.apontamentoConversao
               ? FloatingActionButton(
                   onPressed: abrirCadastroOP,
                   child: const Icon(Icons.add),

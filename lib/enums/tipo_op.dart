@@ -1,0 +1,4 @@
+enum TipoOP {
+  onduladeira,
+  conversao,
+}

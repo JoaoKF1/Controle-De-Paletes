@@ -10,6 +10,7 @@ import '../models/op.dart';
 import '../models/palete.dart';
 import '../models/usuario.dart';
 import 'historico_service.dart';
+import '../enums/tipo_op.dart';
 
 class OPService {
   static final OPService _instance = OPService._internal();
@@ -89,10 +90,12 @@ class OPService {
     required String ft,
     required String qp,
     required TipoOnda onda,
+    required TipoOP tipo,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para criar OP.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     final op = OP(
@@ -103,6 +106,7 @@ class OPService {
       ft: ft,
       qp: qp,
       onda: onda,
+      tipo: tipo,
       status: StatusOP.emAndamento,
       criadaPor: usuario,
       dataCriacao: DateTime.now(),
@@ -160,8 +164,9 @@ class OPService {
     required String? quantidadeQuebra,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para registrar paletes.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     if (op.status == StatusOP.finalizada) {
@@ -217,8 +222,9 @@ class OPService {
     required bool quebra,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para editar paletes.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     if (op.status == StatusOP.finalizada) {
@@ -270,8 +276,9 @@ class OPService {
     required String motivo,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para ajustar perdas.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     if (op.status == StatusOP.finalizada) {
@@ -313,8 +320,9 @@ class OPService {
     required OP op,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para finalizar OP.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     if (op.paletes.isEmpty) {
@@ -339,8 +347,9 @@ class OPService {
     required String motivo,
     required Usuario usuario,
   }) async {
-    if (usuario.perfil != PerfilUsuario.apontamento) {
-      throw Exception('Usuário sem permissão para reabrir OP.');
+    if (usuario.perfil != PerfilUsuario.apontamentoOnduladeira &&
+      usuario.perfil != PerfilUsuario.apontamentoConversao) {
+      throw Exception('Usuário sem permissão.');
     }
 
     if (op.status != StatusOP.finalizada) {

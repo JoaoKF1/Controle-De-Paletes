@@ -1,4 +1,8 @@
 enum PerfilUsuario {
-  apontamento,
-  consulta,
+  qualidade,
+  apontamentoOnduladeira,
+  apontamentoConversao,
+  gerencia,
+  expedicao,
+  operador,
 }

@@ -57,11 +57,13 @@ class _DetalheOPScreenState extends State<DetalheOPScreen> {
   }
 
   bool get podeEditar =>
-      widget.usuario.perfil == PerfilUsuario.apontamento &&
-      widget.op.status != StatusOP.finalizada;
+    (widget.usuario.perfil == PerfilUsuario.apontamentoOnduladeira ||
+        widget.usuario.perfil == PerfilUsuario.apontamentoConversao) &&
+    widget.op.status != StatusOP.finalizada;
 
   bool get podeReabrir =>
-      widget.usuario.perfil == PerfilUsuario.apontamento &&
+      (widget.usuario.perfil == PerfilUsuario.apontamentoOnduladeira ||
+          widget.usuario.perfil == PerfilUsuario.apontamentoConversao) &&
       widget.op.status == StatusOP.finalizada;
 
   void salvarPaleteManual() async {
